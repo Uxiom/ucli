@@ -1,0 +1,49 @@
+{
+  "name": "@uxiom/ucli",
+  "version": "1.2.1",
+  "description": "Offline static design system linter and UI/UX auditor for frontend projects",
+  "main": "src/scanner.js",
+  "type": "module",
+  "bin": {
+    "ucli": "bin/index.js",
+    "ui-critic": "bin/index.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node ./test/test-v12.js",
+    "scan": "node ./bin/index.js scan"
+  },
+  "keywords": [
+    "cli",
+    "linter",
+    "ui-ux",
+    "design-system",
+    "frontend",
+    "accessibility",
+    "a11y",
+    "static-analysis",
+    "tailwind",
+    "tailwindcss",
+    "design-tokens",
+    "react",
+    "flutter",
+    "android",
+    "swift",
+    "css",
+    "audit"
+  ],
+  "author": "Uxiom <uxiom.support@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "latest",
+    "cli-table3": "latest",
+    "commander": "latest",
+    "glob": "latest",
+    "ora": "latest"
+  }
+}

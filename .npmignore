@@ -1,0 +1,13 @@
+# Ignore development & testing files when publishing to npm
+node_modules/
+examples/
+coverage/
+*.log
+.env*
+.git
+.gitignore
+.npmignore
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

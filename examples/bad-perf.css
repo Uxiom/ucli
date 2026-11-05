@@ -1,0 +1,22 @@
+/* bad-perf.css */
+
+/* PERF-004: Missing font-display: swap */
+@font-face {
+  font-family: 'MyCustomFont';
+  src: url('/fonts/mycustomfont.woff2') format('woff2');
+}
+
+/* PERF-001: Animating layout properties instead of transform */
+.card-hover {
+  transition: width 0.3s ease, margin 0.3s ease;
+}
+.card-hover:hover {
+  width: 300px;
+  margin: 10px;
+}
+
+/* PERF-001: Keyframes with expensive layout properties */
+@keyframes slideIn {
+  from { top: -100px; }
+  to { top: 0px; }
+}

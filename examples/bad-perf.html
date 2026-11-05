@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bad Performance Document</title>
+</head>
+<body>
+  <div class="hero">
+    <!-- PERF-002: Missing width and height (CLS issue) -->
+    <!-- PERF-003: Missing loading="lazy" and heavy .gif format -->
+    <img src="/assets/heavy-animation.gif" alt="Hero Animation" />
+  </div>
+
+  <div class="content">
+    <!-- PERF-002: Missing height -->
+    <img src="/assets/static.jpg" width="800" alt="Static Image" />
+  </div>
+
+  <!-- PERF-003: Missing lazy loading on video -->
+  <video src="/assets/demo.mp4" controls></video>
+</body>
+</html>
