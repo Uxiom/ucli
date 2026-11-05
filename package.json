@@ -1,6 +1,6 @@
 {
   "name": "@uxiom/ucli",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Offline static design system linter and UI/UX auditor for frontend projects",
   "main": "src/scanner.js",
   "type": "module",
@@ -18,6 +18,14 @@
     "test": "node ./test/test-v12.js",
     "scan": "node ./bin/index.js scan"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uxiom/ucli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/uxiom/ucli/issues"
+  },
+  "homepage": "https://github.com/uxiom/ucli#readme",
   "keywords": [
     "cli",
     "linter",
