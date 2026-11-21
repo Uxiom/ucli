@@ -18,18 +18,6 @@
 
 ---
 
-## What's New in v1.2.x
-
-* **Project Configuration (`.uclirc.json` / `ucli.config.json`)**: Configure custom spacing grids (e.g., 4px, 8px, 10px), customized allowed scales, rule severities, and ignore globs.
-* **`ucli init` Command**: Scaffolds a starter configuration file in your project with a single command.
-* **Tailwind CSS Arbitrary Value Audits**:
-  * `TAILWIND-001`: Flags arbitrary pixel spacing classes like `p-[13px]`, `m-[7px]`, `gap-[15px]`, `w-[37px]`.
-  * `TAILWIND-002`: Flags arbitrary color escapes like `bg-[#ff5733]`, `text-[#333333]`, or `hover:bg-[rgba(...)]` that bypass semantic theme tokens.
-* **Inline Comment Directives**: Suppress rules on individual lines using standard comments (`// ucli-disable-next-line RULE-ID` or `/* ucli-disable-line */`).
-* **Custom Config Path (`--config <path>`)**: Run scans using dedicated environment or workspace configuration files.
-
----
-
 ## Installation
 
 Run directly with `npx` (no install required):
