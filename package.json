@@ -1,6 +1,6 @@
 {
   "name": "@uxiom/ucli",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Offline static design system linter and UI/UX auditor for frontend projects",
   "main": "src/scanner.js",
   "type": "module",
