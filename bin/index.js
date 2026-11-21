@@ -19,7 +19,7 @@ const program = new Command();
 
 program
   .name('ucli')
-  .description(chalk.bold('ucli') + ' — Fast offline design system linter and UI/UX auditor')
+  .description(chalk.bold('ucli') + ' - Fast offline design system linter and UI/UX auditor')
   .version(pkg.version, '-v, --version', 'Output the current version of ucli');
 
 // Command: init
@@ -31,16 +31,16 @@ program
       const { created, configPath } = initConfigFile(process.cwd());
       if (created) {
         console.log();
-        console.log(chalk.green.bold('✔ Created configuration file: ') + chalk.cyan(path.relative(process.cwd(), configPath) || configPath));
+        console.log(chalk.green.bold('[✔] Created configuration file: ') + chalk.cyan(path.relative(process.cwd(), configPath) || configPath));
         console.log(chalk.gray('  You can now customize your spacing grid, allowed dimensions, and rule severities.'));
         console.log();
       } else {
         console.log();
-        console.log(chalk.yellow.bold('⚠ Configuration file already exists: ') + chalk.gray(path.relative(process.cwd(), configPath) || configPath));
+        console.log(chalk.yellow.bold('[!] Configuration file already exists: ') + chalk.gray(path.relative(process.cwd(), configPath) || configPath));
         console.log();
       }
     } catch (err) {
-      console.error(chalk.red.bold('✖ Failed to initialize configuration: ') + chalk.red(err.message));
+      console.error(chalk.red.bold('[x] Failed to initialize configuration: ') + chalk.red(err.message));
       process.exitCode = 1;
     }
   });
@@ -50,6 +50,9 @@ program
   .command('scan [directory]')
   .description('Scan a frontend directory or file for design system & accessibility violations')
   .option('-j, --json', 'Output results in JSON format', false)
+  .option('--ci', 'Output findings in GitHub Actions workflow annotation format', false)
+  .option('--fix', 'Automatically snap arbitrary spacing values to the design grid', false)
+  .option('--badge [path]', 'Generate an SVG health score badge for READMEs')
   .option('-i, --ignore <patterns...>', 'Additional glob patterns to ignore', [])
   .option('-c, --config <path>', 'Path to custom ucli configuration file')
   .option('--no-open', 'Prevent the HTML dashboard from opening automatically')
@@ -57,6 +60,9 @@ program
     try {
       const results = await scanDirectory(directory, {
         json: options.json,
+        ci: options.ci,
+        fix: options.fix,
+        badge: options.badge,
         ignore: options.ignore || [],
         config: options.config || null,
         openBrowser: options.open
@@ -71,9 +77,29 @@ program
         console.error(JSON.stringify({ error: err.message }, null, 2));
       } else {
         console.error();
-        console.error(chalk.red.bold('✖ ucli scan failed: ') + chalk.red(err.message));
+        console.error(chalk.red.bold('[x] ucli scan failed: ') + chalk.red(err.message));
         console.error();
       }
+      process.exitCode = 1;
+    }
+  });
+
+// Command: badge
+program
+  .command('badge [directory]')
+  .description('Generate an embeddable SVG UI health score badge for your repository')
+  .option('-o, --output <path>', 'Output file path for the SVG badge', 'ui-health-badge.svg')
+  .option('-c, --config <path>', 'Path to custom ucli configuration file')
+  .action(async (directory = '.', options) => {
+    try {
+      await scanDirectory(directory, {
+        json: false,
+        openBrowser: false,
+        config: options.config || null,
+        badge: options.output || 'ui-health-badge.svg'
+      });
+    } catch (err) {
+      console.error(chalk.red.bold('[x] Failed to generate badge: ') + chalk.red(err.message));
       process.exitCode = 1;
     }
   });

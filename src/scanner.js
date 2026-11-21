@@ -4,12 +4,13 @@ import { glob } from 'glob';
 import ora from 'ora';
 import chalk from 'chalk';
 import { exec } from 'node:child_process';
-import { lintFile, summarizeFindings } from './linter.js';
+import { lintFile, fixFile, summarizeFindings } from './linter.js';
 import { printReport } from './reporter.js';
 import { generateHtmlReport } from './htmlReporter.js';
+import { generateBadgeSvg } from './badge.js';
 import { loadConfig } from './config.js';
 
-export { lintFile };
+export { lintFile, fixFile, generateBadgeSvg };
 
 function openFile(filePath) {
   return new Promise((resolve) => {
@@ -70,6 +71,9 @@ export async function resolveFiles(targetPath, ignorePatterns = []) {
  * @param {string} targetPath
  * @param {Object} [options]
  * @param {boolean} [options.json=false] - Set to true for JSON output
+ * @param {boolean} [options.ci=false] - Set to true for GitHub Actions CI format
+ * @param {boolean} [options.fix=false] - Set to true to automatically fix arbitrary spacing
+ * @param {string|boolean|null} [options.badge=null] - Output path for SVG health badge
  * @param {Array<string>} [options.ignore=[]] - Additional ignore patterns
  * @param {string|null} [options.config=null] - Optional path to config file
  * @param {boolean} [options.openBrowser=true] - Set to true to open HTML dashboard
@@ -77,13 +81,17 @@ export async function resolveFiles(targetPath, ignorePatterns = []) {
 export async function scanDirectory(targetPath = '.', options = {}) {
   const {
     json = false,
+    ci = false,
+    fix = false,
+    badge = null,
     ignore = [],
     config: customConfigPath = null,
     openBrowser = true
   } = options;
 
+  const isQuiet = json || ci;
   let spinner = null;
-  if (!json) {
+  if (!isQuiet) {
     spinner = ora({
       text: chalk.cyan('Resolving target frontend source files...'),
       color: 'cyan'
@@ -104,10 +112,24 @@ export async function scanDirectory(targetPath = '.', options = {}) {
 
     if (files.length === 0) {
       if (spinner) spinner.stop();
-      if (!json) {
-        console.log(chalk.yellow(`⚠ No frontend/mobile source files (.html, .jsx, .tsx, .vue, .css, .scss, .dart, .xml, .swift) found in ${targetPath}`));
+      if (!isQuiet) {
+        console.log(chalk.yellow(`[!] No frontend/mobile source files (.html, .jsx, .tsx, .vue, .css, .scss, .dart, .xml, .swift) found in ${targetPath}`));
       }
       return { findings: [], staticSummary: null, staticScore: 100 };
+    }
+
+    // Auto-fix mode: Snap arbitrary pixel spacing before linting
+    let totalFixedCount = 0;
+    if (fix) {
+      for (const file of files) {
+        const { fixedCount } = fixFile(file, projectConfig);
+        totalFixedCount += fixedCount;
+      }
+      if (!isQuiet && totalFixedCount > 0) {
+        if (spinner) spinner.stop();
+        console.log(chalk.green(`[✔] Automatically snapped ${totalFixedCount} arbitrary spacing value(s) to grid.`));
+        if (spinner) spinner.start();
+      }
     }
 
     if (spinner) {
@@ -129,7 +151,7 @@ export async function scanDirectory(targetPath = '.', options = {}) {
 
     if (spinner) spinner.stop();
 
-    // Print formatted output (terminal or JSON)
+    // Print formatted output (terminal, JSON, or CI)
     printReport({
       findings: allFindings,
       staticSummary: summary,
@@ -140,7 +162,23 @@ export async function scanDirectory(targetPath = '.', options = {}) {
       }
     });
 
-    if (!json && openBrowser) {
+    // Generate badge SVG if requested
+    if (badge) {
+      const badgePath = typeof badge === 'string' && badge.trim() !== ''
+        ? path.resolve(process.cwd(), badge)
+        : path.resolve(process.cwd(), 'ui-health-badge.svg');
+      
+      const { getGrade } = await import('./reporter.js');
+      const { grade } = getGrade(staticScore);
+      const svg = generateBadgeSvg(staticScore, grade);
+      fs.writeFileSync(badgePath, svg, 'utf-8');
+
+      if (!isQuiet) {
+        console.log(chalk.gray(`  [✔] SVG health badge saved to: ${badgePath}`));
+      }
+    }
+
+    if (!isQuiet && openBrowser && !ci) {
       if (spinner) {
         spinner.start(chalk.cyan('Generating HTML Dashboard...'));
       }
@@ -163,7 +201,8 @@ export async function scanDirectory(targetPath = '.', options = {}) {
       findings: allFindings,
       staticSummary: summary,
       staticScore,
-      configPath
+      configPath,
+      fixedCount: totalFixedCount
     };
   } catch (err) {
     if (spinner) spinner.stop();

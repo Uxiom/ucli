@@ -9,7 +9,16 @@
 
 ---
 
-## ⚡ What's New in v1.2.x
+## What's New in v1.3.0
+
+* **Auto-Fix & Design Grid Snapping (`--fix`)**: Automatically snaps arbitrary CSS pixel values (e.g. `margin: 19px 7px;` -> `margin: 20px 8px;`) and Tailwind classes (e.g. `p-[13px]` -> `p-[12px]`, `gap-[15px]` -> `gap-[16px]`) to your nearest design grid multiple.
+* **Native GitHub Actions CI Mode (`--ci`)**: Emits standard GitHub Actions workflow annotations (`::warning::` and `::error::`), placing visual design system warnings directly on pull request file diff lines.
+* **SVG UI Health Score Badge (`ucli badge` / `--badge`)**: Generates an embeddable, dual-tone SVG badge (e.g. `ui-health-badge.svg`) reflecting your codebase's UI health score and grade for your repository README.
+* **Responsive Breakpoint Intelligence**: Zero false positives on responsive `@media` and `@container` viewport thresholds (e.g. `@media (max-width: 899px)`), while maintaining strict audits on element dimensions.
+
+---
+
+## What's New in v1.2.x
 
 * **Project Configuration (`.uclirc.json` / `ucli.config.json`)**: Configure custom spacing grids (e.g., 4px, 8px, 10px), customized allowed scales, rule severities, and ignore globs.
 * **`ucli init` Command**: Scaffolds a starter configuration file in your project with a single command.
@@ -21,7 +30,7 @@
 
 ---
 
-## 🚀 Installation
+## Installation
 
 Run directly with `npx` (no install required):
 
@@ -37,7 +46,7 @@ npm install -g @uxiom/ucli
 
 ---
 
-## 🛠 Usage & Commands
+## Usage & Commands
 
 ### 1. Initialize Configuration
 Scaffold a `.uclirc.json` file in your project root:
@@ -60,14 +69,39 @@ ucli scan ./src/components
 ucli scan ./src --config ./custom-ucli.json
 ```
 
-### 3. Headless / CI Mode
+### 3. Automatically Fix Arbitrary Spacing (`--fix`)
+Snap arbitrary CSS spacing declarations and arbitrary Tailwind classes (e.g. `p-[13px]` -> `p-[12px]`) to the nearest modular design grid:
+
+```bash
+ucli scan ./src --fix
+```
+
+### 4. GitHub Actions CI/CD Mode (`--ci`)
+Output standard GitHub workflow annotations (`::warning::` and `::error::`) directly on pull request file diff lines:
+
+```bash
+ucli scan ./src --ci
+```
+
+### 5. Generate UI Health Score Badge (`ucli badge` / `--badge`)
+Generate an embeddable SVG UI health score badge for your repository:
+
+```bash
+# Generate ui-health-badge.svg from current project
+ucli badge
+
+# Or during a scan with custom output path
+ucli scan ./src --badge ./docs/ui-health.svg --no-open
+```
+
+### 6. Headless Mode
 Run without automatically launching the visual HTML dashboard in your browser:
 
 ```bash
 ucli scan ./src --no-open
 ```
 
-### 4. Machine-Readable JSON Output
+### 7. Machine-Readable JSON Output
 Pipe structured audit findings into CI/CD scripts or quality gates:
 
 ```bash
@@ -76,7 +110,7 @@ ucli scan ./src --json
 
 ---
 
-## ⚙ Configuration (`.uclirc.json`)
+## Configuration (`.uclirc.json`)
 
 Customize grid dimensions, token enforcement, and rules by placing a `.uclirc.json` or `ucli.config.json` in your project root:
 
@@ -113,7 +147,7 @@ Customize grid dimensions, token enforcement, and rules by placing a `.uclirc.js
 
 ---
 
-## 💬 Inline Rule Suppressions
+## Inline Rule Suppressions
 
 To bypass a rule for an intentional one-off, add standard comment directives in JavaScript, TypeScript, JSX, CSS, or HTML:
 
@@ -132,7 +166,7 @@ To bypass a rule for an intentional one-off, add standard comment directives in 
 
 ---
 
-## 📋 Comprehensive Rule Reference
+## Comprehensive Rule Reference
 
 | Rule ID | Category | Default | Description |
 | :--- | :--- | :--- | :--- |
@@ -165,7 +199,7 @@ To bypass a rule for an intentional one-off, add standard comment directives in 
 
 ---
 
-## 🌐 Supported Frameworks & Extensions
+## Supported Frameworks & Extensions
 
 `ucli` inspects your codebase offline across frontend, web, and mobile ecosystems:
 * **Web & Components**: `.html`, `.jsx`, `.tsx`, `.vue`, `.svelte`
@@ -175,9 +209,9 @@ To bypass a rule for an intentional one-off, add standard comment directives in 
 
 ---
 
-## 🤖 GitHub Actions CI/CD Integration
+## GitHub Actions CI/CD Integration
 
-Add a design system check directly into your pull request pipeline:
+Add a design system check directly into your pull request pipeline with native annotation reporting:
 
 ```yaml
 # .github/workflows/design-system.yml
@@ -194,12 +228,12 @@ jobs:
         with:
           node-version: 20
       - name: Run ucli static inspection
-        run: npx @uxiom/ucli scan ./src --no-open
+        run: npx @uxiom/ucli scan ./src --ci
 ```
 
 ---
 
-## 💻 CLI Options Reference
+## CLI Options Reference
 
 ```
 Usage: ucli [command] [options]
@@ -207,9 +241,13 @@ Usage: ucli [command] [options]
 Commands:
   init                     Initialize a default .uclirc.json configuration file
   scan [directory]         Scan a frontend directory or file for violations
+  badge [directory]        Generate an embeddable SVG UI health score badge
 
 Options:
   -v, --version            Output current ucli version
+  --ci                     Output findings in GitHub Actions workflow annotation format
+  --fix                    Automatically snap arbitrary spacing values to the design grid
+  --badge [path]           Generate an SVG health score badge for READMEs
   -c, --config <path>      Path to custom ucli configuration file
   -i, --ignore <patterns>  Additional glob patterns to ignore
   -j, --json               Output results in JSON format
@@ -219,6 +257,6 @@ Options:
 
 ---
 
-## 📄 License
+## License
 
 MIT © [Uxiom](https://github.com/uxiom)

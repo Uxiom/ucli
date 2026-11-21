@@ -183,11 +183,18 @@ export function lintFile(filePath, rootDir = process.cwd(), userConfig = {}) {
     }
 
     // --- 2. SPACING SCALE AUDIT: Non-standard pixel spacing in CSS / Inline Styles ---
-    const spacingMatch = line.match(/(margin|padding|gap|top|left|right|bottom|width|height|font-size)\s*:\s*([^\n;]+)/i);
+    // Ignore responsive media / container query conditions (e.g. @media (max-width: 899px))
+    const isBreakpointLine = /^\s*@(media|container)\b/i.test(line) || /^\s*(?:and\s+)?\((?:min|max)-(?:width|height)\s*:\s*[^)]+\)/i.test(line);
+    const spacingMatch = !isBreakpointLine
+      ? line.match(/(margin|padding|gap|top|left|right|bottom|width|height|font-size)\s*:\s*([^\n;]+)/i)
+      : null;
+
     if (spacingMatch) {
       const propName = spacingMatch[1].toLowerCase();
       const valStr = spacingMatch[2];
-      const pxVals = valStr.match(/\b(\d+)px\b/g);
+      // Strip any inline media feature conditions e.g. (max-width: 767px)
+      const cleanValStr = valStr.replace(/\((?:min|max)-(?:width|height)\s*:\s*[^)]+\)/gi, '');
+      const pxVals = cleanValStr.match(/\b(\d+)px\b/g);
       if (pxVals) {
         pxVals.forEach(pxToken => {
           const num = parseInt(pxToken.replace('px', ''), 10);
@@ -513,4 +520,90 @@ export function summarizeFindings(findings, totalFiles = 1) {
   const staticScore = Math.max(10, Math.round(100 - (penaltyFactor * 5)));
 
   return { summary, staticScore };
+}
+
+/**
+ * Automatically fixes spacing violations by snapping arbitrary pixel values
+ * to the nearest valid design grid increment.
+ * Supports standard CSS declarations and arbitrary Tailwind classes.
+ * @param {string} filePath - Absolute path to the file
+ * @param {Object} [userConfig={}] - Configuration options
+ * @returns {{ fixedCount: number, modified: boolean }}
+ */
+export function fixFile(filePath, userConfig = {}) {
+  if (!fs.existsSync(filePath)) {
+    return { fixedCount: 0, modified: false };
+  }
+
+  const grid = typeof userConfig.grid === 'number' && userConfig.grid > 0 ? userConfig.grid : 4;
+  const allowedSpacing = userConfig.allowedSpacingSet || STANDARD_SPACING_PX;
+
+  function snapValue(num) {
+    if (num <= 0) return num;
+    if (allowedSpacing.has(num)) return num;
+    if (num % grid === 0) return num;
+    const nearest = Math.round(num / grid) * grid;
+    return nearest === 0 ? grid : nearest;
+  }
+
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const lines = content.split(/\r?\n/);
+  let totalFixed = 0;
+  let hasChanges = false;
+
+  const ext = path.extname(filePath).toLowerCase();
+  const isMarkup = ext === '.html' || ext === '.jsx' || ext === '.tsx' || ext === '.vue' || ext === '.svelte';
+  const mayHaveTailwind = isMarkup || ext === '.css' || ext === '.scss' || ext === '.js' || ext === '.ts';
+
+  const newLines = lines.map(line => {
+    let modifiedLine = line;
+
+    // Skip comments
+    if (/^\s*(?:\/\/|\/\*|\*|<!--)/.test(line)) {
+      return line;
+    }
+    // Skip media queries / breakpoints
+    if (/^\s*@(media|container)\b/i.test(line) || /^\s*(?:and\s+)?\((?:min|max)-(?:width|height)\s*:\s*[^)]+\)/i.test(line)) {
+      return line;
+    }
+
+    // 1. Fix arbitrary Tailwind spacing classes: e.g. p-[13px] -> p-[12px], gap-[15px] -> gap-[16px]
+    if (mayHaveTailwind) {
+      const twRegex = /((?:[a-zA-Z0-9_-]+:)*-?(?:p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|gap|gap-x|gap-y|top|bottom|left|right|inset|inset-x|inset-y|w|h|min-w|max-w|min-h|max-h|space-x|space-y)-\[)(\d+(?:\.\d+)?)(px)?(\])/g;
+      modifiedLine = modifiedLine.replace(twRegex, (match, prefix, numStr, unit, suffix) => {
+        const num = parseFloat(numStr);
+        const snapped = snapValue(num);
+        if (snapped !== num) {
+          totalFixed++;
+          hasChanges = true;
+          return `${prefix}${snapped}${unit || ''}${suffix}`;
+        }
+        return match;
+      });
+    }
+
+    // 2. Fix CSS spacing declarations
+    const cssSpacingRegex = /((?:margin|padding|gap|top|left|right|bottom|width|height|font-size)\s*:\s*)([^\n;]+)(;?)/gi;
+    modifiedLine = modifiedLine.replace(cssSpacingRegex, (fullMatch, propPrefix, valStr, semi) => {
+      const fixedValStr = valStr.replace(/\b(\d+)px\b/g, (pxMatch, numStr) => {
+        const num = parseInt(numStr, 10);
+        const snapped = snapValue(num);
+        if (snapped !== num) {
+          totalFixed++;
+          hasChanges = true;
+          return `${snapped}px`;
+        }
+        return pxMatch;
+      });
+      return `${propPrefix}${fixedValStr}${semi}`;
+    });
+
+    return modifiedLine;
+  });
+
+  if (hasChanges) {
+    fs.writeFileSync(filePath, newLines.join('\n'), 'utf-8');
+  }
+
+  return { fixedCount: totalFixed, modified: hasChanges };
 }

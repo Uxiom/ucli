@@ -103,10 +103,29 @@ export function printStaticFindings(findings) {
 
 
 /**
- * Main reporter function to render the full report in terminal or JSON.
+ * Renders findings in GitHub Actions workflow command format for CI/CD pipelines.
  */
-export function printReport({ findings, staticSummary, staticScore, options }) {
-  if (options && options.json) {
+export function printCiReport({ findings, staticSummary, staticScore }) {
+  findings.forEach(item => {
+    const level = item.severity === 'ERROR' ? 'error' : (item.severity === 'WARNING' ? 'warning' : 'notice');
+    console.log(`::${level} file=${item.file},line=${item.line},title=${item.ruleId}::${item.message}`);
+  });
+
+  const { grade } = getGrade(staticScore);
+  console.log();
+  console.log(`■ CI Design System Summary: ${grade} (${staticScore}/100) | Errors: ${staticSummary.errors}, Warnings: ${staticSummary.warnings}`);
+}
+
+/**
+ * Main reporter function to render the full report in terminal, JSON, or CI format.
+ */
+export function printReport({ findings, staticSummary, staticScore, options = {} }) {
+  if (options.ci) {
+    printCiReport({ findings, staticSummary, staticScore });
+    return;
+  }
+
+  if (options.json) {
     const payload = {
       timestamp: new Date().toISOString(),
       staticScore,
